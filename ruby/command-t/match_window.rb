@@ -16,7 +16,7 @@
 # LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
 # CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
 # SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER I
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
@@ -61,10 +61,18 @@ module CommandT
       # show match window
       split_location = options[:match_window_at_top] ? 'topleft' : 'botright'
       if @@buffer # still have buffer from last time
-        ::VIM::command "silent! #{split_location} #{@@buffer.number}sbuffer"
-        raise "Can't re-open GoToFile buffer" unless $curbuf.number == @@buffer.number
-        $curwin.height = 1
-      else        # creating match window for first time and set it up
+        begin
+          ::VIM::command "silent! #{split_location} #{@@buffer.number}sbuffer"
+          raise "Can't re-open GoToFile buffer" unless $curbuf.number == @@buffer.number
+          $curwin.height = 1
+        rescue Vim::DeletedBufferError
+          # buffer doesn't really exist.
+          @@buffer = nil
+        end
+      end 
+
+      # creating match window for first time and set it up
+      if @@buffer == nil
         split_command = "silent! #{split_location} 1split GoToFile"
         [
           split_command,
